@@ -1,0 +1,122 @@
+@startuml
+
+title Plan-Write-Error
+
+'skinparam actorStyle awesome
+
+skinparam borderColor #000000
+skinparam backgroundColor #f5f5f5
+skinparam shadowing false
+skinparam roundCorner 10
+skinparam defaultFontName "Arial"
+skinparam defaultFontSize 14
+skinparam defaultFontColor #000000
+skinparam HyperlinkColor #0000EE
+skinparam HyperlinkUnderline false
+skinparam BoxPadding 20
+skinparam BoxBorderColor #555555
+
+skinparam note {
+  BackgroundColor #e0e5f0-#d1d9e6
+  BorderColor #8b95a5
+  BorderThickness 1
+  RoundCorner 0
+  Padding 6
+  FontColor #111827
+  Shadowing false
+}
+
+skinparam sequence {
+  ParticipantBorderColor #555555
+  ParticipantBackgroundColor #ffffff
+  ParticipantFontColor #000000
+  ParticipantFontSize 14
+  ParticipantPadding 20
+  ArrowColor #111827
+  ArrowThickness 1
+  ArrowFontColor #000000
+  ArrowFontSize 13
+  GroupBorderColor #111827
+  GroupBackgroundColor #eef2ff
+  GroupBorderThickness 2
+}
+
+!define COLOR_GDA_1    #15608280
+!define COLOR_GDA_2    #96607D80
+!define COLOR_PATIENT  #196B2480
+!define COLOR_APO      #0F9ED590
+!define COLOR_ELGA_FA  #e97232bd
+!define COLOR_E_REZEPT #cd3732a9
+
+!define COLOR_OK       #0F9ED525
+!define COLOR_ERROR    #E9713235
+
+actor GDA_1 as "GDA 1" COLOR_GDA_1
+participant elga_FA as "Fachanwendung" COLOR_ELGA_FA
+actor GDA_2 as "GDA 2" COLOR_GDA_2
+
+autonumber
+ 
+== Plan-Read durch GDA 1 ==
+
+GDA_1 -> elga_FA: POST $plan-read
+activate GDA_1 COLOR_GDA_1
+
+activate elga_FA COLOR_ELGA_FA
+elga_FA -> GDA_1: Collection Bundle + ETag "123"
+deactivate elga_FA
+
+note over GDA_1
+GDA 1 bearbeitet Medikationsplan
+(Einträge hinzufügen/ändern/entfernen)
+end note
+
+== Plan-Read durch GDA 2 ==
+
+GDA_2 -> elga_FA: POST $plan-read
+activate GDA_2 COLOR_GDA_2
+
+activate elga_FA COLOR_ELGA_FA
+
+elga_FA -> GDA_2: Collection Bundle + ETag "123"
+deactivate elga_FA
+
+note over GDA_2
+GDA 2 bearbeitet Medikationsplan
+(Einträge hinzufügen/ändern/entfernen)
+end note
+
+== Plan-Write durch GDA 2 ==
+
+GDA_2 -> elga_FA: POST $plan-write (Transaction\nBundle + ETag "123")
+
+activate elga_FA COLOR_ELGA_FA
+elga_FA -> elga_FA: ETag "123" im Header ==\nETag der Fachanwendung "123"
+elga_FA --> GDA_2: OK 
+deactivate GDA_2
+
+note over elga_FA
+Medikationsplan wurde durch GDA 2 aktualisiert.
+end note
+
+deactivate elga_FA
+
+== Plan-Write-Error für GDA 1 ==
+
+GDA_1 -> elga_FA: POST $plan-write (Transaction Bundle + ETag "123")
+
+activate elga_FA COLOR_ELGA_FA
+elga_FA -> elga_FA: ETag im Header "123" stimmt nicht\nmit ETag der Fachanwendung\nüberein, da er bereits zum Schreiben\nverwendet wurde
+note over elga_FA
+Fachanwendung lehnt Speichern ab
+end note
+elga_FA --> GDA_1: Fehler (Konflikt)
+deactivate GDA_1
+note over elga_FA, GDA_1
+Speichern des Medikationsplans wurde abgelehnt, 
+der GDA 1 muss ein neues Plan-Read ausführen.
+end note
+
+deactivate elga_FA
+
+@enduml
