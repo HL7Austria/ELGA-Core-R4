@@ -6,8 +6,8 @@
 id: hl7.at.fhir.elga.core.r4
 canonical: https://fhir.hl7.at/elga/core/r4
 name: ELGA Core (R4)
-# title: Example Title
-# description: Example Implementation Guide for getting started with SUSHI
+title: ELGA Core (R4) DRAFT
+description: The FHIR® implementation guide ELGA Core (R4)
 status: draft # draft | active | retired | unknown
 version: 0.1.0
 fhirVersion: 4.0.1 # https://www.hl7.org/fhir/valueset-FHIR-version.html
@@ -17,8 +17,13 @@ releaseLabel: ci-build
 # jurisdiction: urn:iso:std:iso:3166#US "United States of America" # https://www.hl7.org/fhir/valueset-jurisdiction.html
 publisher:
   name: ELGA GmbH
-  url: https://www.elga.gv.at/
-  # email: test@example.org
+  url: http://elga.gv.at
+contact:
+  - name: ELGA GmbH
+    telecom:
+      - system: url
+        value: https://elga.gv.at
+        use: work
 
 # The dependencies property corresponds to IG.dependsOn. The key is the
 # package id and the value is the version (or dev/current). For advanced
@@ -57,7 +62,30 @@ dependencies:
 #     title: Examples Overview
 #     simpleExamples.xml:
 #     complexExamples.xml:
-#
+
+
+pages:
+  index.md:
+    title: Home
+  # scope_and_content.md:
+  #   title: Umfang und Inhalt
+  # background.md:
+  #   title: Hintergrund
+  # challenges.md:
+  #   title: Herausforderungen  
+  design_choices.md:
+    title: Designentscheidungen
+  # actors.md:
+  #   title: Akteure
+  workflowmanagement.md:
+    title: Workflowmanagement
+  # obligations.md:
+  #   title: Obligations
+  interactions.md:
+    title: Transaktionen
+
+
+
 #
 # The parameters property represents IG.definition.parameter. Rather
 # than a list of code/value pairs (as in the ImplementationGuide
@@ -82,7 +110,21 @@ dependencies:
 # ╰────────────────────────────────────────────────────────────────────────────────────────────────╯
 menu:
   Home: index.html
+  Inhaltsverzeichnis: toc.html
+  # Einleitung: 
+  #   Umfang und Inhalt: scope_and_content.html
+  #   Hintergrund: background.html
+  #   Herausforderungen: challenges.html
+  Funktionales:
+    Designentscheidungen: design_choices.html
+    # Akteure: actors.html
+    # Dosierschemata: dosaging.html
+    Workflowmanagement: workflowmanagement.html
+    # Obligations: obligations.html
+    Transaktionen: interactions.html
+  # Mappings: mapping.html
   Artifacts: artifacts.html
+
 
 # ╭───────────────────────────Less Common Implementation Guide Properties──────────────────────────╮
 # │  Uncomment the properties below to configure additional properties on the ImplementationGuide  │
