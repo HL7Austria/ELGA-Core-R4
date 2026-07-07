@@ -44,7 +44,7 @@ skinparam sequence {
 !define COLOR_GDA_2    #96607D80
 !define COLOR_PATIENT  #196B2480
 !define COLOR_APO      #0F9ED590
-!define COLOR_ELGA_FA  #e97232bd
+!define COLOR_FA  #e97232bd
 !define COLOR_E_REZEPT #cd3732a9
 
 !define COLOR_OK       #0F9ED525
@@ -52,32 +52,26 @@ skinparam sequence {
 
 
 actor GDA_1 as "GDA 1" COLOR_GDA_1
-participant elga_FA as "Fachanwendung" COLOR_ELGA_FA
+participant FA as "Fachanwendung" COLOR_FA
 
 
 autonumber
 
-== Medikationsplan lesen ==
+GDA_1 -> FA: POST /$history-read
 
-GDA_1 -> elga_FA: GET Medikationsplan-Collection-Bundle
 activate GDA_1 COLOR_GDA_1
+activate FA COLOR_FA
 
-activate elga_FA COLOR_ELGA_FA
-elga_FA -> elga_FA: Prüfung auf bestehenden\nMedikationsplan
+FA -> FA: Prüfung auf bestehende\nCollection-Bundles
 
-alt COLOR_OK Medikationsplan vorhanden
-  elga_FA -> GDA_1: Medikationsplan-Collection-Bundle
-else COLOR_ERROR kein Medikationsplan vorhanden
-  elga_FA --> GDA_1: leeres Ergebnis
+group COLOR_OK alt: Collection-Bundles gefunden? [Collection-Bundles entsprechend der Parameter vorhanden]
+  FA -> GDA_1: Bundle (type=searchset) mit zumindest einem Collection-Bundle
+else COLOR_OK kein Collection-Bundle entsprechend der Parameter vorhanden
+  FA -> GDA_1: Bundle (type=searchset) ohne Einträge
+else COLOR_ERROR Fehler
+  FA -> GDA_1: OperationOutcome
   deactivate GDA_1
-  deactivate elga_FA
+  deactivate FA
 end
-
-note over GDA_1, elga_FA
-Die Fachanwendung liefert den zuletzt gespeicherten Medikationsplan 
-(unverändert, inkl. aller referenzierten Ressourcen) oder ein leeres
-Ergebnis zurück.
-end note
-
 
 @enduml
