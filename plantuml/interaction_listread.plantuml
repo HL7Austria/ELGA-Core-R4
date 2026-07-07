@@ -1,5 +1,5 @@
 @startuml
-title Plan-Read
+title Liste und zugehörige Ressourcen abrufen ($read)
 
 'skinparam actorStyle awesome
 
@@ -43,47 +43,62 @@ skinparam sequence {
 !define COLOR_GDA_1    #15608280
 !define COLOR_GDA_2    #96607D80
 !define COLOR_PATIENT  #196B2480
-!define COLOR_APO      #0F9ED590
-!define COLOR_ELGA_FA  #e97232bd
-!define COLOR_E_REZEPT #cd3732a9
+!define COLOR_FA  #e97232bd
 
 !define COLOR_OK       #0F9ED525
 !define COLOR_ERROR    #E9713235
 
 actor GDA_1 as "GDA 1" COLOR_GDA_1
-participant elga_FA as "Fachanwendung" COLOR_ELGA_FA
-
+participant FA as "Fachanwendung" COLOR_FA
 
 autonumber
 
-== Medikationsplan abrufen ==
-
-GDA_1 -> elga_FA: POST $plan-read
+GDA_1 -> FA: POST /$read
 activate GDA_1 COLOR_GDA_1
+activate FA COLOR_FA
 
-note over GDA_1
-Medikationsplan abrufen, 
-mit der Intention zu schreiben
-end note
+FA -> FA: Prüfen, ob Liste besteht
 
-activate elga_FA COLOR_ELGA_FA
-elga_FA -> elga_FA: Prüfung auf bestehenden\nMedikationsplan
+group COLOR_OK alt: Liste vorhanden? [Liste vorhanden]
 
-alt COLOR_OK Medikationsplan vorhanden
-  elga_FA -> elga_FA: Stellt Auslieferungs-Medikationsplan-\nCollection-Bundle bereit:\nBedingung:\n- new|changed → unchanged\n- removed → entfernen
-  elga_FA -> GDA_1: Auslieferungs-Medikationsplan-Collection-Bundle\n+ ETag für Optimistic Locking
-else COLOR_ERROR kein Medikationsplan vorhanden
-  elga_FA -> elga_FA: Erzeugt leeren Medikationsplan\n mit List.emptyReason = "notstarted"
-  elga_FA -> GDA_1: Leerer Medikationsplan
-  deactivate elga_FA
+  FA -> FA: Prüfen, ob List.emptyReason vorhanden ist
+  
+  group COLOR_OK alt: List.emptyReason vorhanden? [nein]
+
+    FA -> FA: Flag der Listeneinträge aufbereiten\nnew|changed → unchanged\nremoved → entfernen
+    FA -> FA: Zählen der Listeneinträge
+
+    group COLOR_OK alt: Anzahl Einträge? [zumindest ein Eintrag]
+
+      FA -> GDA_1: Collection-Bundle (nicht leer)\n+ ETag für Optimistic Locking
+
+    else COLOR_ERROR Liste leer
+      
+      FA -> FA: List.emptyReason = nilknown setzen
+      FA -> GDA_1: Collection-Bundle (leer)\n+ ETag für Optimistic Locking
+
+    end
+
+  else COLOR_ERROR ja
+
+    note over FA
+      List.emptyReason kann den Wert "notstarted" oder 
+      "nilknown" haben.
+    end note
+    FA -> GDA_1: Collection-Bundle (leer)\n+ ETag für Optimistic Locking
+
+  end
+else COLOR_ERROR Liste nicht vorhanden
+  
+  FA -> FA: Leere Liste mit List.emptyReason = notstarted erzeugen
+  FA -> GDA_1: Collection-Bundle (leer)\n+ ETag für Optimistic Locking
+  deactivate FA
+
 end
 
-GDA_1 -> GDA_1: Einträge hinzufügen/ändern/entfernen
+deactivate GDA_1
 
-note over GDA_1
-Nach der Bearbeitung des 
-Medikationsplans kann ein 
-Plan-Write erfolgen.
-end note
+
+
 
 @enduml
