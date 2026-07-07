@@ -44,14 +44,14 @@ skinparam sequence {
 !define COLOR_GDA_2    #96607D80
 !define COLOR_PATIENT  #196B2480
 !define COLOR_APO      #0F9ED590
-!define COLOR_ELGA_FA  #e97232bd
+!define COLOR_FA  #e97232bd
 !define COLOR_E_REZEPT #cd3732a9
 
 !define COLOR_OK       #0F9ED525
 !define COLOR_ERROR    #E9713235
 
 actor GDA_1 as "GDA 1" COLOR_GDA_1
-participant elga_FA as "Fachanwendung" COLOR_ELGA_FA
+participant FA as "Fachanwendung" COLOR_FA
 
 
 autonumber
@@ -59,34 +59,41 @@ autonumber
 activate GDA_1 COLOR_GDA_1
 
 note over GDA_1
-Vorbedingung: Nach einem Plan-Read
-wird der Medikationsplan bearbeit.
+Vorbedingung: Nach einem $read wurden
+die Inhalte bearbeitet.
 end note
 
-== Medikationsplan schreiben ==
+GDA_1 -> FA: POST /$write (Transaction-Bundle + ETag)
 
-GDA_1 -> elga_FA: POST $plan-write Medikationsplan-Transaction-Bundle + ETag
+activate FA COLOR_FA
+FA -> FA: ETag im Header ==\nETag der Fachanwendung?
 
-activate elga_FA COLOR_ELGA_FA
-elga_FA -> elga_FA: ETag im Header ==\nETag der Fachanwendung?
+group COLOR_OK alt: ETag stimmt überein? [ja]
 
-alt COLOR_OK gültig 
-  elga_FA -> elga_FA: Validierung des neuen Plans\n(keine unzulässigen Zustandsübergänge)
-  elga_FA -> elga_FA: Persistiert neue Version des\nMedikationsplans
-  
-  note over elga_FA
-  Neuer Medikationsplan gespeichert
-  end note
+  FA -> FA: Validierung der Inhalte\n(keine unzulässigen Zustandsübergänge)
 
-  elga_FA --> GDA_1: OK
+  group COLOR_OK alt: Validierung erfolgreich? [ja]
 
-else COLOR_ERROR ungültig 
+    FA -> FA: Neue Version persistieren
 
-  elga_FA --> GDA_1: Fehler 
+    note over FA
+    Neue Version der Liste und aller Referenzen gespeichert
+    end note
 
+    FA -> GDA_1: HTTP 200 OK
+
+  else COLOR_ERROR nein
+
+    FA --> GDA_1: Fehler (HTTP 4xx)\nOperationOutcome
+
+  end
+
+else COLOR_ERROR nein
+
+  FA -> GDA_1: Fehler (HTTP 428 Precondition Required)\nOperationOutcome
   deactivate GDA_1
-  deactivate elga_FA
-end
+  deactivate FA
 
+end
 
 @enduml
