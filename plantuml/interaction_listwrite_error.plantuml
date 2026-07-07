@@ -45,78 +45,80 @@ skinparam sequence {
 !define COLOR_GDA_2    #96607D80
 !define COLOR_PATIENT  #196B2480
 !define COLOR_APO      #0F9ED590
-!define COLOR_ELGA_FA  #e97232bd
+!define COLOR_FA  #e97232bd
 !define COLOR_E_REZEPT #cd3732a9
 
 !define COLOR_OK       #0F9ED525
 !define COLOR_ERROR    #E9713235
 
 actor GDA_1 as "GDA 1" COLOR_GDA_1
-participant elga_FA as "Fachanwendung" COLOR_ELGA_FA
+participant FA as "Fachanwendung" COLOR_FA
 actor GDA_2 as "GDA 2" COLOR_GDA_2
 
 autonumber
  
-== Plan-Read durch GDA 1 ==
+== $read durch GDA 1 ==
 
-GDA_1 -> elga_FA: POST $plan-read
+GDA_1 -> FA: POST /$read
 activate GDA_1 COLOR_GDA_1
 
-activate elga_FA COLOR_ELGA_FA
-elga_FA -> GDA_1: Collection Bundle + ETag "123"
-deactivate elga_FA
+activate FA COLOR_FA
+FA -> GDA_1: Collection-Bundle + ETag "123"
+deactivate FA
 
 note over GDA_1
-GDA 1 bearbeitet Medikationsplan
-(Einträge hinzufügen/ändern/entfernen)
+GDA 1 bearbeitet Inhalte
 end note
 
-== Plan-Read durch GDA 2 ==
+== $ead durch GDA 2 ==
 
-GDA_2 -> elga_FA: POST $plan-read
+GDA_2 -> FA: POST /$read
 activate GDA_2 COLOR_GDA_2
 
-activate elga_FA COLOR_ELGA_FA
+activate FA COLOR_FA
 
-elga_FA -> GDA_2: Collection Bundle + ETag "123"
-deactivate elga_FA
+FA -> GDA_2: Collection-Bundle + ETag "123"
+deactivate FA
 
 note over GDA_2
-GDA 2 bearbeitet Medikationsplan
-(Einträge hinzufügen/ändern/entfernen)
+GDA 2 bearbeitet Inhalte
 end note
 
-== Plan-Write durch GDA 2 ==
+== $write durch GDA 2 ==
 
-GDA_2 -> elga_FA: POST $plan-write (Transaction\nBundle + ETag "123")
+GDA_2 -> FA: POST /$write (Transaction-Bundle + ETag "123")
 
-activate elga_FA COLOR_ELGA_FA
-elga_FA -> elga_FA: ETag "123" im Header ==\nETag der Fachanwendung "123"
-elga_FA --> GDA_2: OK 
+activate FA COLOR_FA
+FA -> FA: ETag "123" im Header ==\nETag der Fachanwendung "123"
+
+note over FA
+  Fachanwendung aktualisiert Inhalte.
+end note
+
+FA -> GDA_2: HTTP 200 OK 
 deactivate GDA_2
 
-note over elga_FA
-Medikationsplan wurde durch GDA 2 aktualisiert.
+deactivate FA
+
+== $write-Error für GDA 1 ==
+
+GDA_1 -> FA: POST /$write (Transaction-Bundle + ETag "123")
+
+activate FA COLOR_FA
+FA -> FA: ETag im Header "123" stimmt nicht\nmit ETag der Fachanwendung\nüberein, da er bereits zum Schreiben\nverwendet wurde
+
+note over FA
+  Fachanwendung lehnt Speichern ab.
 end note
 
-deactivate elga_FA
-
-== Plan-Write-Error für GDA 1 ==
-
-GDA_1 -> elga_FA: POST $plan-write (Transaction Bundle + ETag "123")
-
-activate elga_FA COLOR_ELGA_FA
-elga_FA -> elga_FA: ETag im Header "123" stimmt nicht\nmit ETag der Fachanwendung\nüberein, da er bereits zum Schreiben\nverwendet wurde
-note over elga_FA
-Fachanwendung lehnt Speichern ab
-end note
-elga_FA --> GDA_1: Fehler (Konflikt)
+FA -> GDA_1: HTTP 428 Fehler
 deactivate GDA_1
-note over elga_FA, GDA_1
-Speichern des Medikationsplans wurde abgelehnt, 
-der GDA 1 muss ein neues Plan-Read ausführen.
+
+note over FA, GDA_1
+  Speichern der Inhalte wurde abgelehnt, 
+  der GDA 1 muss ein neues $read ausführen.
 end note
 
-deactivate elga_FA
+deactivate FA
 
 @enduml
